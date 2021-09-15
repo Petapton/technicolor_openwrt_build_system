@@ -1,0 +1,4 @@
+STLport-*/
+include
+lib
+libstlport.so.*

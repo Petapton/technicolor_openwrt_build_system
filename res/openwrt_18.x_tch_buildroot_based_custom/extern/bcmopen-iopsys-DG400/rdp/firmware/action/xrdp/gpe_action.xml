@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<datastruct>
+    <data_segment name="entries">
+        <entry name="GPE_COMMAND" gendef="True">
+            <field name="opcode" size="4" />
+            <field name="offset" size="6" />
+            <field name="target_memory" size="2" />
+            <field name="length" size="4" />
+        </entry>
+    </data_segment>
+    <data_segment name="codedefs">
+        <codedef name="GPE_COMMAND_LIST" gendef="True">
+            <code name="terminator" value="0" />
+        </codedef>
+    </data_segment>
+</datastruct>

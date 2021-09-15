@@ -1,0 +1,1 @@
+cmd_../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/wlcsm_ext/bcm963138/wlcsm.o := arm-openwrt-linux-gnueabi-ld -EL    -r -o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/wlcsm_ext/bcm963138/wlcsm.o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/wlcsm_ext/bcm963138/wlcsm_dep.o 

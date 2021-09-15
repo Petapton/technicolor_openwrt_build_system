@@ -1,0 +1,30 @@
+From 5f471bfb230295e4edb8b94bca1267211032e796 Mon Sep 17 00:00:00 2001
+From: Hans Dedecker <hans.dedecker@technicolor.com>
+Date: Wed, 21 Nov 2018 10:06:54 +0100
+Subject: [PATCH] netfilter: preserve outgoing interface for
+ broadcast/multicast traffic
+
+Preserve outgoing interface for multicast/broadcast traffic in ip_route_me_harder
+as typically the egress interface for such traffic is not intendend to be changed
+as the egress interface is specified via either IP_PKTINFO/SO_BINDTODEVICE or
+by the kernel module generating the packet
+---
+ net/ipv4/netfilter.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/linux-4.1/net/ipv4/netfilter.c b/kernel/linux-4.1/net/ipv4/netfilter.c
+index 65de0684e2..a234d0810b 100644
+--- a/net/ipv4/netfilter.c
++++ b/net/ipv4/netfilter.c
+@@ -41,6 +41,8 @@ int ip_route_me_harder(struct sk_buff *skb, unsigned int addr_type)
+ 	fl4.saddr = saddr;
+ 	fl4.flowi4_tos = RT_TOS(iph->tos);
+ 	fl4.flowi4_oif = skb->sk ? skb->sk->sk_bound_dev_if : 0;
++	if (!fl4.flowi4_oif && (ipv4_is_lbcast(iph->daddr) || ipv4_is_multicast(iph->daddr)))
++		fl4.flowi4_oif = skb_dst(skb)->dev->ifindex;
+ 	fl4.flowi4_mark = skb->mark;
+ 	fl4.flowi4_flags = flags;
+ 	rt = ip_route_output_key(net, &fl4);
+-- 
+2.19.1
+

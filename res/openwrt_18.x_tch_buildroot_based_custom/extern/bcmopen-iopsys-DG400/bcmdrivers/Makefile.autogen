@@ -1,0 +1,10 @@
+# Automatically generated file -- do not modify manually
+
+
+$(info READING AG MAKEFILE)
+
+
+$(eval $(call LN_RULE_AG, CONFIG_BCM_CRYPTODEV, opensource/char/cryptodev, $(LN_NAME)))
+$(eval $(call LN_RULE_AG, CONFIG_BCM_MCAST, opensource/char/mcast, $(LN_NAME)))
+$(eval $(call LN_RULE_AG, CONFIG_BCM_PDC, opensource/char/pdc, $(LN_NAME)))
+$(eval $(call LN_RULE_AG, CONFIG_BCM_SPU, opensource/char/spudd, $(LN_NAME)))

@@ -1,0 +1,19 @@
+# Automatically generated file -- do not modify manually
+
+
+menu "CRYPTODEV"
+source "../../bcmdrivers/opensource/char/cryptodev/Kconfig.autodetect"
+endmenu 
+
+menu "MCAST"
+source "../../bcmdrivers/opensource/char/mcast/Kconfig.autodetect"
+endmenu 
+
+menu "PDC"
+source "../../bcmdrivers/opensource/char/pdc/Kconfig.autodetect"
+endmenu 
+
+menu "SPU"
+source "../../bcmdrivers/opensource/char/spudd/Kconfig.autodetect"
+endmenu 
+

@@ -1,0 +1,86 @@
+Add tunnel encapsulation limit header in grev6 packets and fix
+the order of headers (previously ipv6 extension headers were added
+after gre header).
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -595,7 +595,7 @@ static void init_tel_txopt(struct ipv6_tel_txoption *opt, __u8 encap_limit)
+ 	opt->dst_opt[5] = IPV6_TLV_PADN;
+ 	opt->dst_opt[6] = 1;
+ 
+-	opt->ops.dst0opt = (struct ipv6_opt_hdr *) opt->dst_opt;
++	opt->ops.dst1opt = (struct ipv6_opt_hdr *) opt->dst_opt;
+ 	opt->ops.opt_nflen = 8;
+ }
+ 
+@@ -611,9 +611,11 @@ static netdev_tx_t ip6gre_xmit2(struct sk_buff *skb,
+ 	struct net_device *tdev;    /* Device to other host */
+ 	struct ipv6hdr  *ipv6h;     /* Our new IP header */
+ 	unsigned int max_headroom = 0; /* The extra header space needed */
++	int    ext_hlen = 0;
+ 	int    gre_hlen;
+ 	struct ipv6_tel_txoption opt;
+ 	int    mtu;
++	void   *greh;
+ 	struct dst_entry *dst = NULL, *ndst = NULL;
+ 	struct net_device_stats *stats = &tunnel->dev->stats;
+ 	int err = -1;
+@@ -710,9 +712,16 @@ static netdev_tx_t ip6gre_xmit2(struct sk_buff *skb,
+ 	}
+ 
+ 	proto = NEXTHDR_GRE;
++	if (gre_hlen > 0) {
++		BUG_ON(gre_hlen <= sizeof(*ipv6h));
++		skb_push(skb, gre_hlen - sizeof(*ipv6h));
++	}
++
+ 	if (encap_limit >= 0) {
++		int orig_len = skb->len;
+ 		init_tel_txopt(&opt, encap_limit);
+-		ipv6_push_nfrag_opts(skb, &opt.ops, &proto, NULL);
++		ipv6_push_frag_opts(skb, &opt.ops, &proto);
++		ext_hlen = skb->len - orig_len;
+ 	}
+ 
+ 	if (likely(!skb->encapsulation)) {
+@@ -720,9 +729,10 @@ static netdev_tx_t ip6gre_xmit2(struct sk_buff *skb,
+ 		skb->encapsulation = 1;
+ 	}
+ 
+-	skb_push(skb, gre_hlen);
++	if (gre_hlen > 0)
++		skb_push(skb, sizeof(*ipv6h));
+ 	skb_reset_network_header(skb);
+-	skb_set_transport_header(skb, sizeof(*ipv6h));
++	skb_set_transport_header(skb, sizeof(*ipv6h) + ext_hlen);
+ 
+ 	/*
+ 	 *	Push down and install the IP header.
+@@ -735,13 +745,14 @@ static netdev_tx_t ip6gre_xmit2(struct sk_buff *skb,
+ 	ipv6h->saddr = fl6->saddr;
+ 	ipv6h->daddr = fl6->daddr;
+ 
+-	((__be16 *)(ipv6h + 1))[0] = tunnel->parms.o_flags;
++	greh = skb_transport_header(skb);
++	((__be16 *)greh)[0] = tunnel->parms.o_flags;
+ 	protocol = (dev->type == ARPHRD_ETHER) ?
+ 		    htons(ETH_P_TEB) : skb->protocol;
+-	((__be16 *)(ipv6h + 1))[1] = protocol;
++	((__be16 *)greh)[1] = protocol;
+ 
+ 	if (tunnel->parms.o_flags&(GRE_KEY|GRE_CSUM|GRE_SEQ)) {
+-		__be32 *ptr = (__be32 *)(((u8 *)ipv6h) + tunnel->hlen - 4);
++		__be32 *ptr = (__be32 *)(((u8 *)greh) + tunnel->hlen - sizeof(*ipv6h) - 4);
+ 
+ 		if (tunnel->parms.o_flags&GRE_SEQ) {
+ 			++tunnel->o_seqno;
+@@ -754,8 +765,8 @@ static netdev_tx_t ip6gre_xmit2(struct sk_buff *skb,
+ 		}
+ 		if (tunnel->parms.o_flags&GRE_CSUM) {
+ 			*ptr = 0;
+-			*(__sum16 *)ptr = ip_compute_csum((void *)(ipv6h+1),
+-				skb->len - sizeof(struct ipv6hdr));
++			*(__sum16 *)ptr = ip_compute_csum(greh,
++				skb->len - sizeof(*ipv6h) - ext_hlen);
+ 		}
+ 	}
+ 

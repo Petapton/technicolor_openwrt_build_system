@@ -1,0 +1,85 @@
+diff -Naur orig_openvswitch-2.5.0/Makefile.in openvswitch-2.5.0/Makefile.in
+--- orig_openvswitch-2.5.0/Makefile.in	2016-02-28 01:35:38.384165896 +0800
++++ openvswitch-2.5.0/Makefile.in	2016-03-02 22:16:12.361709800 +0800
+@@ -161,16 +161,20 @@
+ @DPDK_NETDEV_TRUE@am__append_3 = -D_FILE_OFFSET_BITS=64
+ @NDEBUG_TRUE@am__append_4 = -DNDEBUG
+ @NDEBUG_TRUE@am__append_5 = -fomit-frame-pointer
++#bin_PROGRAMS = utilities/ovs-appctl$(EXEEXT) \
++#	utilities/ovs-testcontroller$(EXEEXT) \
++#	utilities/ovs-dpctl$(EXEEXT) utilities/ovs-ofctl$(EXEEXT) \
++#	utilities/ovs-vsctl$(EXEEXT) utilities/ovs-benchmark$(EXEEXT) \
++#	ovsdb/ovsdb-tool$(EXEEXT) ovsdb/ovsdb-client$(EXEEXT) \
++#	vtep/vtep-ctl$(EXEEXT) ovn/controller/ovn-controller$(EXEEXT) \
++#	ovn/controller-vtep/ovn-controller-vtep$(EXEEXT) \
++#	ovn/northd/ovn-northd$(EXEEXT) \
++#	ovn/utilities/ovn-nbctl$(EXEEXT) \
++#	ovn/utilities/ovn-sbctl$(EXEEXT)
+ bin_PROGRAMS = utilities/ovs-appctl$(EXEEXT) \
+-	utilities/ovs-testcontroller$(EXEEXT) \
+ 	utilities/ovs-dpctl$(EXEEXT) utilities/ovs-ofctl$(EXEEXT) \
+ 	utilities/ovs-vsctl$(EXEEXT) utilities/ovs-benchmark$(EXEEXT) \
+-	ovsdb/ovsdb-tool$(EXEEXT) ovsdb/ovsdb-client$(EXEEXT) \
+-	vtep/vtep-ctl$(EXEEXT) ovn/controller/ovn-controller$(EXEEXT) \
+-	ovn/controller-vtep/ovn-controller-vtep$(EXEEXT) \
+-	ovn/northd/ovn-northd$(EXEEXT) \
+-	ovn/utilities/ovn-nbctl$(EXEEXT) \
+-	ovn/utilities/ovn-sbctl$(EXEEXT)
++	ovsdb/ovsdb-tool$(EXEEXT) ovsdb/ovsdb-client$(EXEEXT) 
+ sbin_PROGRAMS = $(am__EXEEXT_3) vswitchd/ovs-vswitchd$(EXEEXT) \
+ 	ovsdb/ovsdb-server$(EXEEXT)
+ noinst_PROGRAMS = $(am__EXEEXT_1) tests/test-ovsdb$(EXEEXT) \
+@@ -5056,13 +5060,15 @@
+ 
+ info-am:
+ 
+-install-data-am: install-completionSCRIPTS install-data-local \
+-	install-dist_pkgdataDATA install-dist_pkgdataSCRIPTS \
+-	install-dist_scriptsDATA install-dist_scriptsSCRIPTS \
+-	install-man install-nobase_pkgdataDATA \
+-	install-openflowincludeHEADERS \
+-	install-openvswitchincludeHEADERS install-pkgconfigDATA \
+-	install-pkgdataDATA install-scriptsDATA install-scriptsSCRIPTS
++#install-data-am: install-completionSCRIPTS install-data-local \
++#	install-dist_pkgdataDATA install-dist_pkgdataSCRIPTS \
++#	install-dist_scriptsDATA install-dist_scriptsSCRIPTS \
++#	install-man install-nobase_pkgdataDATA \
++#	install-openflowincludeHEADERS \
++#	install-openvswitchincludeHEADERS install-pkgconfigDATA \
++#	install-pkgdataDATA install-scriptsDATA install-scriptsSCRIPTS
++
++install-data-am: install-pkgdataDATA 
+ 
+ install-dvi: install-dvi-recursive
+ 
+@@ -5112,16 +5118,20 @@
+ 
+ ps-am:
+ 
+-uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
+-	uninstall-completionSCRIPTS uninstall-dist_pkgdataDATA \
+-	uninstall-dist_pkgdataSCRIPTS uninstall-dist_sbinSCRIPTS \
+-	uninstall-dist_scriptsDATA uninstall-dist_scriptsSCRIPTS \
+-	uninstall-libLTLIBRARIES uninstall-local uninstall-man \
+-	uninstall-nobase_pkgdataDATA uninstall-openflowincludeHEADERS \
+-	uninstall-openvswitchincludeHEADERS uninstall-pkgconfigDATA \
+-	uninstall-pkgdataDATA uninstall-sbinPROGRAMS \
+-	uninstall-sbinSCRIPTS uninstall-scriptsDATA \
+-	uninstall-scriptsSCRIPTS
++#uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
++#	uninstall-completionSCRIPTS uninstall-dist_pkgdataDATA \
++#	uninstall-dist_pkgdataSCRIPTS uninstall-dist_sbinSCRIPTS \
++#	uninstall-dist_scriptsDATA uninstall-dist_scriptsSCRIPTS \
++#	uninstall-libLTLIBRARIES uninstall-local uninstall-man \
++#	uninstall-nobase_pkgdataDATA uninstall-openflowincludeHEADERS \
++#	uninstall-openvswitchincludeHEADERS uninstall-pkgconfigDATA \
++#	uninstall-pkgdataDATA uninstall-sbinPROGRAMS \
++#	uninstall-sbinSCRIPTS uninstall-scriptsDATA \
++#	uninstall-scriptsSCRIPTS
++
++uninstall-am: uninstall-binPROGRAMS uninstall-local\
++	uninstall-pkgdataDATA uninstall-sbinPROGRAMS 
++
+ 
+ uninstall-man: uninstall-man1 uninstall-man5 uninstall-man7 \
+ 	uninstall-man8

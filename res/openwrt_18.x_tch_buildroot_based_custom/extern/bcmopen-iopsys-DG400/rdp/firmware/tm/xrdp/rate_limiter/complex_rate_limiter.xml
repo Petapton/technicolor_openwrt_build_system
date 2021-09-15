@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<datastruct>
+<!--
+        <entry name="Complex Rate Limiter">
+        </entry>
+-->
+    <data_segment name="entries">
+        <entry name="COMPLEX_RATE_LIMITER_DESCRIPTOR" gendef="True">
+            <field name="rl_type" size="1" />
+            <field name="reserved2" size="22" />
+            <field name="block_type" size="1" />
+            <field name="block_index" size="8" />
+            <field name="sir_current_budget" size="32" />
+            <field name="sir_alloc_mantissa" size="14" />
+            <field name="sir_alloc_exponent" size="2" />
+            <field name="sir_limit_mantissa" size="14" />
+            <field name="sir_limit_exponent" size="2" />
+            <field name="pir_current_budget" size="32" />
+            <field name="pir_alloc_mantissa" size="14" />
+            <field name="pir_alloc_exponent" size="2" />
+            <field name="pir_limit_mantissa" size="14" />
+            <field name="pir_limit_exponent" size="2" />
+            <field name="reserved" size="8" is_array="true" array_num_entries="12" />
+        </entry>
+    </data_segment>
+
+</datastruct>

@@ -1,0 +1,1 @@
+cmd_../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/pktflow/bcm963138/pktflow.o := arm-openwrt-linux-gnueabi-ld -EL    -r -o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/pktflow/bcm963138/pktflow.o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/pktflow/bcm963138/pktflow_dep.o 

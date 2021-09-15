@@ -1,0 +1,66 @@
+From 76931edd54f87d1e49536cd068df4783fae24d45 Mon Sep 17 00:00:00 2001
+From: Stas Sergeev <stsp@list.ru>
+Date: Thu, 14 May 2015 08:24:02 -0700
+Subject: leds: fix brightness changing when software blinking is active
+
+The following sequence:
+echo timer >/sys/class/leds/<name>/trigger
+echo 1 >/sys/class/leds/<name>/brightness
+should change the ON brightness for blinking.
+The function led_set_brightness() was mistakenly initiating the
+delayed blink stop procedure, which resulted in no blinking with
+the timer trigger still active.
+
+This patch fixes the problem by changing led_set_brightness()
+to not initiate the delayed blink stop when brightness is not 0.
+
+CC: Richard Purdie <rpurdie@rpsys.net>
+CC: Kyungmin Park <kyungmin.park@samsung.com>
+CC: linux-leds@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+
+Acked-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+Signed-off-by: Stas Sergeev <stsp@users.sourceforge.net>
+Signed-off-by: Bryan Wu <cooloney@gmail.com>
+---
+ drivers/leds/led-class.c | 5 +++++
+ drivers/leds/led-core.c  | 5 +++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 728681d..adc38d1 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -121,6 +121,11 @@ static void led_timer_function(unsigned long data)
+ 	brightness = led_get_brightness(led_cdev);
+ 	if (!brightness) {
+ 		/* Time to switch the LED on. */
++		if (led_cdev->delayed_set_value) {
++			led_cdev->blink_brightness =
++					led_cdev->delayed_set_value;
++			led_cdev->delayed_set_value = 0;
++		}
+ 		brightness = led_cdev->blink_brightness;
+ 		delay = led_cdev->blink_delay_on;
+ 	} else {
+diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+index 9886dac..549de7e 100644
+--- a/drivers/leds/led-core.c
++++ b/drivers/leds/led-core.c
+@@ -119,10 +119,11 @@ void led_set_brightness(struct led_classdev *led_cdev,
+ {
+ 	int ret = 0;
+ 
+-	/* delay brightness setting if need to stop soft-blink timer */
++	/* delay brightness if soft-blink is active */
+ 	if (led_cdev->blink_delay_on || led_cdev->blink_delay_off) {
+ 		led_cdev->delayed_set_value = brightness;
+-		schedule_work(&led_cdev->set_brightness_work);
++		if (brightness == LED_OFF)
++			schedule_work(&led_cdev->set_brightness_work);
+ 		return;
+ 	}
+ 
+-- 
+cgit v1.1
+

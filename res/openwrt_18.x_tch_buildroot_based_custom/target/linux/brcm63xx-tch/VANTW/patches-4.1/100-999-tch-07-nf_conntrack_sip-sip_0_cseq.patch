@@ -1,0 +1,41 @@
+From 8cd9b77797fa823023b6294df5ea3133cac1eb84 Mon Sep 17 00:00:00 2001
+From: Fan Wei <wei.fan@technicolor.com>
+Date: Wed, 27 Mar 2019 11:39:31 +0800
+Subject: [PATCH] Allow SIP OPTIONS CSEQ 0.
+
+from upstream patch 0d35d0815b19216f852f257afe420f7c7d182780
+netfilter: nf_conntrack_sip: CSeq 0 is a valid CSeq
+Do not drop packet when CSeq is 0 as 0 is also a valid value for CSeq.
+
+simple_strtoul() will return 0 either when all digits are 0
+or if there are no digits at all. Therefore when simple_strtoul()
+returns 0 we check if first character is digit 0 or not.
+
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ kernel/linux-4.1/net/netfilter/nf_conntrack_sip.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_sip.c b/net/netfilter/nf_conntrack_sip.c
+index 2b3abe69f3..3310cdb737 100644
+--- a/net/netfilter/nf_conntrack_sip.c
++++ b/net/netfilter/nf_conntrack_sip.c
+@@ -1414,7 +1469,7 @@ static int process_sip_response(struct sk_buff *skb, unsigned int protoff,
+ 		return NF_DROP;
+ 	}
+ 	cseq = simple_strtoul(*dptr + matchoff, NULL, 10);
+-	if (!cseq) {
++	if (!cseq && *(*dptr + matchoff) != '0') {
+ 		nf_ct_helper_log(skb, ct, "cannot get cseq");
+ 		return NF_DROP;
+ 	}
+@@ -1477,7 +1532,7 @@ static int process_sip_request(struct sk_buff *skb, unsigned int protoff,
+ 			return NF_DROP;
+ 		}
+ 		cseq = simple_strtoul(*dptr + matchoff, NULL, 10);
+-		if (!cseq) {
++		if (!cseq && *(*dptr + matchoff) != '0') {
+ 			nf_ct_helper_log(skb, ct, "cannot get cseq");
+ 			return NF_DROP;
+ 		}

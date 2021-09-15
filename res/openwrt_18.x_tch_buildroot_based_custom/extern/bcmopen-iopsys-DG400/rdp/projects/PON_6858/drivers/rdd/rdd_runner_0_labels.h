@@ -1,0 +1,32 @@
+#ifndef IMAGE_0_CODE_ADDRESSES
+#define IMAGE_0_CODE_ADDRESSES
+
+#define image_0_start_task_initialization_task		(0x18)
+#define image_0_initialization_task		(0x18)
+#define image_0_start_task_update_fifo_read_1st_wakeup_request		(0xC68)
+#define image_0_update_fifo_read_1st_wakeup_request		(0xC68)
+#define image_0_start_task_tx_task_1st_wakeup_request		(0x8C)
+#define image_0_tx_task_1st_wakeup_request		(0x8C)
+#define image_0_tx_task_wakeup_request		(0x8C)
+#define image_0_start_task_flush_task_1st_wakeup_request		(0x53C)
+#define image_0_flush_task_1st_wakeup_request		(0x53C)
+#define image_0_start_task_budget_allocator_1st_wakeup_request		(0x630)
+#define image_0_budget_allocator_1st_wakeup_request		(0x630)
+#define image_0_start_task_debug_routine		(0xAC4)
+#define image_0_debug_routine		(0xAC4)
+#define image_0_debug_routine_handler		(0xC)
+#define image_0_scheduling_update_status		(0x284)
+#define image_0_scheduling_action_not_valid		(0x324)
+#define image_0_basic_scheduler_update_dwrr		(0x430)
+#define image_0_complex_scheduler_update_dwrr_basic_schedulers		(0x51C)
+#define image_0_complex_scheduler_update_dwrr_queues		(0x52C)
+#define image_0_basic_rate_limiter_complex_scheduler		(0x920)
+#define image_0_basic_rate_limiter_basic_scheduler_no_cs		(0x94C)
+#define image_0_basic_rate_limiter_queue_with_cs_bs		(0x978)
+#define image_0_basic_rate_limiter_queue_with_bs		(0x9C4)
+#define image_0_complex_rate_limiter_queue_sir		(0x9F4)
+#define image_0_complex_rate_limiter_queue_pir		(0xA28)
+#define image_0_complex_rate_limiter_basic_scheduler_sir		(0xA5C)
+#define image_0_complex_rate_limiter_basic_scheduler_pir		(0xA90)
+
+#endif

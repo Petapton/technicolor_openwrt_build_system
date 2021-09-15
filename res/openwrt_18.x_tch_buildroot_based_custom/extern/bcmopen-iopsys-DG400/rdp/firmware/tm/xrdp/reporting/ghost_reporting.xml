@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<datastruct>
+    <data_segment name="entries">
+<!--
+        <entry name="GHOST REPORTING">
+        </entry>
+-->
+        <entry name="REPORTING_QUEUE_DESCRIPTOR">
+            <field name="reported_bytes" size="32" />
+            <field name="reported_overhead" size="32" />
+            <field name="counter_ptr" size="16" />
+            <field name="reserved" size="8" is_array="true" array_num_entries="6" />
+        </entry>
+
+        <entry name="REPORTING_ACCUMULATED_DATA">
+            <field name="accumulated_bytes" size="32" />
+            <field name="accumulated_overhead" size="32" />
+        </entry>
+
+        <entry name="GHOST_REPORTING_GLOBAL_CFG_ENTRY">
+            <field name="mac_type" size="3" />
+            <field name="reserved" size="13" />
+            <field name="timer_interval" size="16" />
+        </entry>
+    </data_segment>
+
+    <data_segment name="modules">
+        <abs_module name="REPORTING">
+           <table name="GHOST_REPORTING_GLOBAL_CFG">
+                <!-- 4 bytes-->
+                <table_properties size="1" alignment="4" align_type="table"/>
+                <entry name="GHOST_REPORTING_GLOBAL_CFG_ENTRY" />
+            </table>
+            <table name="REPORTING_QUEUE_DESCRIPTOR_TABLE">
+                <!-- 160 queues x 16 byte -->
+                <table_properties size="160" alignment="4096" align_type="table"/>
+                <entry name="REPORTING_QUEUE_DESCRIPTOR" />
+            </table>
+            <table name="REPORTING_QUEUE_ACCUMULATED_TABLE">
+                <!-- 16 entries x 8 byte-->
+                <table_properties size="16" alignment="128" align_type="table"/>
+                <entry name="REPORTING_ACCUMULATED_DATA" />
+            </table>
+            <table name="GHOST_REPORTING_QUEUE_STATUS_BIT_VECTOR_TABLE">
+                <!-- 5 entries x 4 byte-->
+                <table_properties size="5" alignment="32" align_type="table"/>
+                <entry name="BYTES_4" />
+            </table>
+            <table name="REPORTING_COUNTER_TABLE">
+                <!-- 40 entries x 4 byte-->
+                <table_properties size="40" alignment="256" align_type="table"/>
+                <entry name="BYTES_4" />
+            </table>
+            <table name="REPORT_BBH_TX_QUEUE_ID_TABLE">
+                <!-- 2 entries x 4 byte -->
+                <table_properties size="2" alignment="8" align_type="table"/>
+                <entry name="BYTES_4" />
+            </table>
+            <table name="BBH_TX_EGRESS_REPORT_COUNTER_TABLE">
+                <!-- 1 entries x 8 byte -->
+                <table_properties size="1"/>
+                <entry name="BBH_TX_EGRESS_COUNTER_ENTRY" />
+            </table>
+            <table name="BBH_TX_INGRESS_COUNTER_TABLE">
+                <!-- 1 entries x 1 byte -->
+                <table_properties size="1"/>
+                <entry name="BYTE_1" />
+            </table>
+            <table name="XGPON_REPORT_TABLE">
+                <!-- 4 entries x 4 byte -->
+                <table_properties size="4" alignment="16" align_type="table"/>
+                <entry name="BYTES_4" />
+            </table>
+            <table name="XGPON_REPORT_ZERO_SENT_TABLE">
+                <!-- each byte corresponds to 4 tconts -->
+                <table_properties size="10" />
+                <entry name="BYTE_1" />
+            </table>
+        </abs_module>
+    </data_segment>
+</datastruct>

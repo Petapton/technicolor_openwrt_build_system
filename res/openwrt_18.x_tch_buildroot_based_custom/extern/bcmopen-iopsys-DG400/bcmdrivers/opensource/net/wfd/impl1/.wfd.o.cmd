@@ -1,0 +1,1 @@
+cmd_../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/opensource/net/wfd/bcm963138/wfd.o := arm-openwrt-linux-gnueabi-ld -EL    -r -o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/opensource/net/wfd/bcm963138/wfd.o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/opensource/net/wfd/bcm963138/wfd_dev.o 

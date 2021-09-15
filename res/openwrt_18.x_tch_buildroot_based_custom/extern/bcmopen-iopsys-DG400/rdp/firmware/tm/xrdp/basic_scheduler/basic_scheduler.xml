@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<datastruct>
+<!--
+        <entry name="Basic Scheduler">
+        </entry>
+-->
+    <data_segment name="entries">
+        <entry name="BASIC_SCHEDULER_DESCRIPTOR">
+            <field name="rate_limit_enable" size="1" />
+            <field name="complex_scheduler_exists" size="1" />
+            <field name="dwrr_offset" size="2" />
+            <field name="last_served_queue" size="3" />
+            <union_field union_name="parent_index" union_size="9">
+                <field name="complex_scheduler_slot_index" size="5" sub_union="1" />
+                <field name="complex_scheduler_index" size="4" sub_union="1" />
+                <field name="bbh_queue" size="6" sub_union="2" />
+                <field name="ovl_rl_en" size="1" sub_union="2" />
+                <field name="is_positive_budget" size="1" sub_union="2" />
+                <field name="reserved1" size="1" sub_union="2" />
+            </union_field>
+            <field name="slot_budget_bit_vector" size="8" />
+            <field name="status_bit_vector" size="8" />
+            <field name="rate_limiter_index" size="8" />
+            <field name="quantum_number" size="8" field_api="True"/>
+            <field name="deficit_counter" size="16" />
+            <field name="queue_index" size="8" is_array="true" array_num_entries="8" />
+        </entry>
+    </data_segment>
+
+    <data_segment name="modules">
+        <abs_module name="BASIC_SCHEDULER">
+            <table name="BASIC_SCHEDULER_TABLE">
+                <table_properties size="0x0" align_type="table"/>
+                <entry name="BASIC_SCHEDULER_DESCRIPTOR" />
+            </table>
+        </abs_module>
+    </data_segment>
+</datastruct>

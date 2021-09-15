@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<datastruct>
+<!--
+        <entry name="Complex Scheduler">
+        </entry>
+-->
+    <data_segment name="entries">
+        <entry name="COMPLEX_SCHEDULER_DESCRIPTOR" structurize="True" struct_name="complex_scheduler_rl_cfg">
+            <field name="rate_limit_enable" size="1" />
+            <field name="is_positive_budget" size="1" />
+            <field name="basic_scheduler_exists" size="1" struct_discard="True"/>
+            <field name="bbh_queue" size="6" struct_discard="True"/>
+            <field name="rate_limiter_index" size="7" />
+            <field name="dwrr_offset_pir" size="3" field_api="True" struct_discard="True"/>
+            <field name="dwrr_offset_sir" size="3" field_api="True" struct_discard="True"/>
+            <field name="last_served_block_pir" size="5" struct_discard="True"/>
+            <field name="last_served_block_sir" size="5" struct_discard="True"/>
+            <field name="status_bit_vector" size="32" struct_discard="True"/>
+            <field name="slot_budget_bit_vector_0" size="32" field_api="True" struct_discard="True"/>
+            <field name="slot_budget_bit_vector_1" size="32" struct_discard="True"/>
+            <field name="ovl_rl_en" size="1" struct_discard="True"/>
+            <field name="reserved3" size="31" />
+            <field name="reserved1" size="8" is_array="true" array_num_entries="12" />
+            <field name="block_index" size="8" is_array="true" array_num_entries="32" struct_discard="True"/>
+        </entry>
+    </data_segment>
+
+    <data_segment name="modules">
+        <abs_module name="COMPLEX_SCHEDULER">
+            <table name="COMPLEX_SCHEDULER_TABLE">
+                <table_properties size="0x0" align_type="table"/>
+                <entry name="COMPLEX_SCHEDULER_DESCRIPTOR" />
+            </table>
+        </abs_module>
+    </data_segment>
+</datastruct>

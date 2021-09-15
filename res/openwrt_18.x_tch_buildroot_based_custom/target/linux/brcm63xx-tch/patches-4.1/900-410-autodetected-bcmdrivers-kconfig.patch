@@ -1,0 +1,87 @@
+--- a/Kconfig.bcm	2019-05-17 11:36:27.000000000 +0200
++++ b/Kconfig.bcm	2019-07-10 16:30:39.317865700 +0200
+@@ -1364,6 +1364,71 @@
+ 	depends on BCM963138
+ 
+ menu "Autodetected Drivers"
+-source "../../bcmdrivers/Kconfig.autogen"
+-endmenu
++# Automatically generated file -- do not modify manually
++
++
++menu "CRYPTODEV"
++config BCM_CRYPTODEV
++	tristate "Cyrptodev Linux module"
++	default n
++
++config BCM_CRYPTODEV_IMPL
++	int "Implementation index for Cryptodev Linux"
++	depends on BCM_CRYPTODEV
++	default 1
++
++endmenu 
++
++menu "MCAST"
++config BCM_MCAST
++	tristate "Support for Broadcom Multicast features"
++	depends on BRIDGE
++	depends on INET
++	default n
++
++config BCM_MCAST_IMPL
++	int "Implementation index for Broadcom Multicast features"
++	depends on BCM_MCAST
++	default 1
++
++config BR_IGMP_SNOOP
++	bool "IGMP Snooping"
++	depends on BCM_MCAST
++	default n
+ 
++config BR_MLD_SNOOP
++	bool "MLD Snooping"
++	depends on BCM_MCAST
++	default n
++
++endmenu 
++
++menu "PDC"
++config BCM_PDC
++	tristate "Support for PDC"
++	depends on BCM_SPU
++	depends on BCM94908
++	default m
++
++config BCM_PDC_IMPL
++	int "Implementation index for PDC"
++	depends on BCM_PDC
++	default 1
++
++endmenu 
++
++menu "SPU"
++config BCM_SPU
++	tristate "Support for Crypto SPU"
++	default n
++	
++config BCM_SPU_IMPL
++	int "Implementation index for Crypto SPU"
++	depends on BCM_SPU
++	default 2 if BCM963268
++	default 3 if BCM963138 || BCM963148
++	default 4 if BCM94908
++
++endmenu 
++
++endmenu
+--- a/Makefile	2019-07-10 23:48:53.988466900 +0200
++++ b/Makefile	2019-07-10 23:49:25.256207800 +0200
+@@ -15,7 +15,7 @@
+ # o Look for make include files relative to root of kernel src
+ MAKEFLAGS += -rR --include-dir=$(CURDIR)
+
+-BRCMDRIVERS_DIR_RELATIVE = ../../bcmdrivers
++BRCMDRIVERS_DIR_RELATIVE = $(shell realpath --relative-to $(CURDIR) $(BRCMDRIVERS_DIR))
+ # Avoid funny character set dependencies
+ unexport LC_ALL
+ LC_COLLATE=C

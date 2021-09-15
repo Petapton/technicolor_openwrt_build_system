@@ -1,0 +1,10 @@
+--- a/net/ipv6/netfilter/ip6table_mangle.c
++++ b/net/ipv6/netfilter/ip6table_mangle.c
+@@ -61,6 +61,7 @@ ip6t_mangle_out(struct sk_buff *skb, con
+ 			    dev_net(state->out)->ipv6.ip6table_mangle);
+ 
+ 	if (ret != NF_DROP && ret != NF_STOLEN &&
++	    !(ipv6_addr_type(&ipv6_hdr(skb)->daddr) & (IPV6_ADDR_LOOPBACK | IPV6_ADDR_LINKLOCAL)) &&
+ 	    (!ipv6_addr_equal(&ipv6_hdr(skb)->saddr, &saddr) ||
+ 	     !ipv6_addr_equal(&ipv6_hdr(skb)->daddr, &daddr) ||
+ 	     skb->mark != mark ||

@@ -1,0 +1,1 @@
+cmd_../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/slicslac/bcm963138/slicslac.o := arm-openwrt-linux-gnueabi-ld -EL    -r -o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/slicslac/bcm963138/slicslac.o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/slicslac/bcm963138/slicslac_dep.o 

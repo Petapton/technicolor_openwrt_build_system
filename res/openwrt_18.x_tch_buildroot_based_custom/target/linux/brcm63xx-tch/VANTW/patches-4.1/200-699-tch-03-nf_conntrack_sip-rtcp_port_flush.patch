@@ -1,0 +1,48 @@
+From 79bedaddcffd557f7ffae6e9c6c33d0c525e57b9 Mon Sep 17 00:00:00 2001
+From: xiong xuecheng <xuecheng.xiong@technicolor.com>
+Date: Thu, 17 Jan 2019 22:06:29 +0800
+Subject: [PATCH] It only check duplicated RTP expects before create RTP&RTCP
+ expects. When RTP&RTCP is not pairly exit, will residual RTCP expets. This
+ modification is flushing duplicate residual rtcp expects in NO-NAT scenario.
+ Case happened when 183 contact header changed UAC ipaddress/port, lead
+ subsuquent re-invite with same RTP/RTCP port expetats related to new master
+ connection failed and drop re-invite pakets.
+
+---
+ net/netfilter/nf_conntrack_sip.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/net/netfilter/nf_conntrack_sip.c b/net/netfilter/nf_conntrack_sip.c
+index b9f1d3f..1cac142 100644
+--- a/net/netfilter/nf_conntrack_sip.c
++++ b/net/netfilter/nf_conntrack_sip.c
+@@ -801,6 +801,17 @@ static int ct_sip_parse_sdp_addr(const struct nf_conn *ct, const char *dptr,
+ 	return 1;
+ }
+ 
++static void release_conflicting_expect(const struct nf_conn *ct, const struct nf_conntrack_expect *expect, const enum sip_expectation_classes class)
++{
++	struct nf_conntrack_expect *exp;
++	struct net *net = nf_ct_net(ct);
++	exp = __nf_ct_expect_find(net, nf_ct_zone(ct), &expect->tuple);
++	if (exp && exp->master != ct &&
++			   nfct_help(exp->master)->helper == nfct_help(ct)->helper &&
++			   exp->class == class)
++                nf_ct_unexpect_related(exp);
++}
++
+ static int refresh_signalling_expectation(struct nf_conn *ct,
+ 					  union nf_inet_addr *addr,
+ 					  u8 proto, __be16 port,
+@@ -1029,6 +1040,8 @@ static int set_expected_rtp_rtcp(struct sk_buff *skb, unsigned int protoff,
+ 				       datalen, rtp_exp, rtcp_exp,
+ 				       mediaoff, medialen, daddr);
+ 	else {
++		release_conflicting_expect(ct, rtp_exp, class);
++		release_conflicting_expect(ct, rtcp_exp, class);
+ #if defined(CONFIG_BCM_KF_NETFILTER_SIP)
+ 		ret = bcm_nf_sip_sdp_media(skb, protoff, dataoff, dptr,
+ 				datalen, rtp_exp, rtcp_exp,
+-- 
+1.9.1
+

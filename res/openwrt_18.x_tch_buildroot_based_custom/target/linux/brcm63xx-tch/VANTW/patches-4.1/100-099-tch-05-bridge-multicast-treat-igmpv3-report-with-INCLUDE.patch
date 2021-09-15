@@ -1,0 +1,83 @@
+Backport of following kernel commit:
+From bc8c20acaea154efc558f5f4122ed65d396f6156 Mon Sep 17 00:00:00 2001
+From: Satish Ashok <sashok@cumulusnetworks.com>
+Date: Mon, 13 Jul 2015 05:28:37 -0700
+Subject: [PATCH 7/7] bridge: multicast: treat igmpv3 report with INCLUDE and
+ no sources as a leave
+
+A report with INCLUDE/Change_to_include and empty source list should be
+treated as a leave, specified by RFC 3376, section 3.1:
+"If the requested filter mode is INCLUDE *and* the requested source
+ list is empty, then the entry corresponding to the requested
+ interface and multicast address is deleted if present.  If no such
+ entry is present, the request is ignored."
+
+Signed-off-by: Satish Ashok <sashok@cumulusnetworks.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@cumulusnetworks.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/bridge/br_multicast.c | 37 ++++++++++++++++++++++++++++++-------
+ 1 file changed, 30 insertions(+), 7 deletions(-)
+
+Index: linux-4.1/net/bridge/br_multicast.c
+===================================================================
+--- linux-4.1.orig/net/bridge/br_multicast.c
++++ linux-4.1/net/bridge/br_multicast.c
+@@ -37,6 +37,16 @@
+ 
+ static void br_multicast_start_querier(struct net_bridge *br,
+ 				       struct bridge_mcast_own_query *query);
++static void br_ip4_multicast_leave_group(struct net_bridge *br,
++					 struct net_bridge_port *port,
++					 __be32 group,
++					 __u16 vid);
++#if IS_ENABLED(CONFIG_IPV6)
++static void br_ip6_multicast_leave_group(struct net_bridge *br,
++					 struct net_bridge_port *port,
++					 const struct in6_addr *group,
++					 __u16 vid);
++#endif
+ unsigned int br_mdb_rehash_seq;
+ 
+ static inline int br_ip_equal(const struct br_ip *a, const struct br_ip *b)
+@@ -1009,9 +1019,15 @@ static int br_ip4_multicast_igmp3_report
+ 			continue;
+ 		}
+ 
+-		err = br_ip4_multicast_add_group(br, port, group, vid);
+-		if (err)
+-			break;
++		if ((type == IGMPV3_CHANGE_TO_INCLUDE ||
++		     type == IGMPV3_MODE_IS_INCLUDE) &&
++		    ntohs(grec->grec_nsrcs) == 0) {
++			br_ip4_multicast_leave_group(br, port, group, vid);
++		} else {
++			err = br_ip4_multicast_add_group(br, port, group, vid);
++			if (err)
++				break;
++		}
+ 	}
+ 
+ 	return err;
+@@ -1070,10 +1086,17 @@ static int br_ip6_multicast_mld2_report(
+ 			continue;
+ 		}
+ 
+-		err = br_ip6_multicast_add_group(br, port, &grec->grec_mca,
+-						 vid);
+-		if (err)
+-			break;
++		if ((grec->grec_type == MLD2_CHANGE_TO_INCLUDE ||
++		     grec->grec_type == MLD2_MODE_IS_INCLUDE) &&
++		    ntohs(*nsrcs) == 0) {
++			br_ip6_multicast_leave_group(br, port, &grec->grec_mca,
++						     vid);
++		} else {
++			err = br_ip6_multicast_add_group(br, port,
++							 &grec->grec_mca, vid);
++			if (!err)
++				break;
++		}
+ 	}
+ 
+ 	return err;

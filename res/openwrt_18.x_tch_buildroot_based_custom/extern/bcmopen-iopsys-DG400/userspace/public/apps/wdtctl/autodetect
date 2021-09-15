@@ -1,0 +1,4 @@
+
+dependson: public/libs/bcm_util
+condition: ifneq ($(strip $(BUILD_WDTCTL)),)
+

@@ -1,0 +1,1 @@
+cmd_../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/xtmcfg/bcm963138/bcmxtmcfg.o := arm-openwrt-linux-gnueabi-ld -EL    -r -o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/xtmcfg/bcm963138/bcmxtmcfg.o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/xtmcfg/bcm963138/bcmxtmcfg_dep.o 

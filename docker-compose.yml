@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  buildenv:
+    build: .
+    volumes:
+      - repo:/workdir/openwrt_18.x_tch_buildroot_based_custom/bin/packages/arm_cortex-a9_neon
+    tty: true
+  repo:
+    image: "httpd"
+    ports:
+      - "8080:80"
+    volumes:
+      - repo:/usr/local/apache2/htdocs/
+
+volumes:
+  repo:

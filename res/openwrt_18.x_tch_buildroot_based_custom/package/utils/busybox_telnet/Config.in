@@ -1,0 +1,26 @@
+if PACKAGE_busybox_telnet
+
+config BUSYBOX_TELNET_CUSTOM
+	bool "Customize busybox options"
+	default n
+        help
+          Enabling this allows full customization of busybox settings.
+          Note that there are many options here that can result in a build
+          that doesn't work properly.  Enabling customization will mark your
+          build as "tainted" for the purpose of bug reports.
+          See the variables written to /etc/openwrt_release
+
+          Unless you know what you are doing, you should leave this as 'n'
+
+	source "Config-defaults.in"
+
+	if BUSYBOX_TELNET_CUSTOM
+	source "config/Config.in"
+	endif
+
+config BUSYBOX_TELNET_USE_LIBRPC
+	bool
+	default y if BUSYBOX_TELNET_CUSTOM && BUSYBOX_TELNET_CONFIG_FEATURE_HAVE_RPC
+	default y if !BUSYBOX_TELNET_CUSTOM && BUSYBOX_TELNET_DEFAULT_FEATURE_HAVE_RPC
+
+endif

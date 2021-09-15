@@ -1,0 +1,33 @@
+diff -pruN a/kernel/kthread.c b/kernel/kthread.c
+--- a/kernel/kthread.c	2016-07-18 18:57:05.241934768 +0530
++++ b/kernel/kthread.c	2016-07-18 18:55:00.817939162 +0530
+@@ -20,6 +20,8 @@
+ #include <linux/uaccess.h>
+ #include <trace/events/sched.h>
+
++#include <linux/cn_proc.h>
++
+ static DEFINE_SPINLOCK(kthread_create_lock);
+ static LIST_HEAD(kthread_create_list);
+ struct task_struct *kthreadd_task;
+@@ -320,6 +322,9 @@ struct task_struct *kthread_create_on_no
+		sched_setscheduler_nocheck(task, SCHED_NORMAL, &param);
+		set_cpus_allowed_ptr(task, cpu_all_mask);
+	}
++
++	/* borrow PROC_EVENT_EXEC of process event connector for kernel thread */
++	proc_exec_connector(create->result);
+	kfree(create);
+	return task;
+ }
+@@ -473,6 +478,10 @@ int kthread_stop(struct task_struct *k)
+		wait_for_completion(&kthread->exited);
+	}
+	ret = k->exit_code;
++
++	/* send EXIT event to proc event connector */
++	proc_exit_connector(k);
++
+	put_task_struct(k);
+
+	trace_sched_kthread_stop_ret(ret);

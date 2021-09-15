@@ -1,0 +1,26 @@
+--- bridge-utils-1.5/brctl/brctl_cmd.c	2017-01-10 16:39:55.751528703 +0100
++++ bridge-utils-1.5/brctl/brctl_cmd.new.c	2017-01-10 16:39:41.983518438 +0100
+@@ -388,6 +388,14 @@ static int br_cmd_show(int argc, char *c
+ 	return 0;
+ }
+ 
++static int br_cmd_showbr(int argc, char *const* argv)
++{
++	const char *brname = argv[1];
++	printf("bridge name\tbridge id\t\tSTP enabled\tinterfaces\n");
++	show_bridge(brname, NULL);
++	return 0;
++}
++
+ static int compare_fdbs(const void *_f0, const void *_f1)
+ {
+ 	const struct fdb_entry *f0 = _f0;
+@@ -513,6 +521,8 @@ static const struct command commands[] =
+ 	  "<bridge>\t\tshow bridge stp info"},
+ 	{ 2, "stp", br_cmd_stp,
+ 	  "<bridge> {on|off}\tturn stp on/off" },
++	{ 1, "showbr", br_cmd_showbr, 
++	  "<bridge>\t\tshow a list of interfaces belong to a bridge" },
+ // brcm begin
+ 	{ 1, "showmaclmt", br_cmd_show_mac_lmt, 
+ 	  "<bridge>\t\tshow a mac limit of bridge"},

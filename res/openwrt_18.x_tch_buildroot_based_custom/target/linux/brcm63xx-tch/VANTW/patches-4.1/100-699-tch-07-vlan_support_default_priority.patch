@@ -1,0 +1,16 @@
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -192,6 +192,13 @@ vlan_dev_get_egress_qos_mask(struct net_
+ 		}
+ 		mp = mp->next;
+ 	}
++	mp = vlan_dev_priv(dev)->egress_priority_map[0xF];
++	while (mp) {
++		if (!~mp->priority) { /* default value */
++			return mp->vlan_qos;
++		}
++		mp = mp->next;
++	}
+ 	return 0;
+ }
+ 

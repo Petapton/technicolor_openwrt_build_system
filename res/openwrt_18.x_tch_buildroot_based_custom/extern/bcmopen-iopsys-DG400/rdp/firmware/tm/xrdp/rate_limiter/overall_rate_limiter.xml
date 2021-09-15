@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<datastruct>
+<!--
+        <entry name="Overall Rate Limiter">
+        </entry>
+-->
+    <data_segment name="entries">
+        <entry name="OVERALL_RATE_LIMITER_DESCRIPTOR">
+            <field name="bbh_queue_en_vec" size="32" />
+            <field name="current_budget" size="32" />
+            <field name="alloc_mantissa" size="14" />
+            <field name="alloc_exponent" size="2" />
+            <field name="limit_mantissa" size="14" />
+            <field name="limit_exponent" size="2" />
+            <field name="reserved1" size="32" />
+        </entry>
+    </data_segment>
+
+    <data_segment name="modules">
+        <abs_module name="OVERALL_RATE_LIMITER">
+            <table name="OVERALL_RATE_LIMITER_TABLE">
+                <table_properties size="1" align_type="table"/>
+                <entry name="OVERALL_RATE_LIMITER_DESCRIPTOR" />
+            </table>
+        </abs_module>
+    </data_segment>
+</datastruct>

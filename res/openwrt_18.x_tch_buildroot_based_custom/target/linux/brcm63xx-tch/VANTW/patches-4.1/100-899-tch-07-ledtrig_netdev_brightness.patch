@@ -1,0 +1,84 @@
+From: Hao Xue Feng <xuefeng.hao@technicolor.com>
+Date: Wed, 22 Nov 2017 15:07:41 +0800
+Subject: ledtrig-netdev: add support for brightness
+
+Instead of always use the hard-coded LED_FULL when bring ON a LED,
+use 'echo value > brightness' to control the brightness in netdev trigger.
+
+Signed-off-by: xuefenghao <haoxf1@163.com>
+---
+ drivers/leds/ledtrig-netdev.c    | 28 ++++++++++++++++++-----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
+
+--- a/drivers/leds/ledtrig-netdev.c      2017-11-20 16:55:46.557554048 +0800
++++ b/drivers/leds/ledtrig-netdev.c      2017-11-21 16:49:05.365554895 +0800
+@@ -90,10 +90,21 @@
+ 	unsigned last_activity;
+ };
+ 
++static inline void set_blink_brightness(struct led_netdev_data *trigger_data)
++{
++	int current_brightness;
++
++	current_brightness = led_get_brightness(trigger_data->led_cdev);
++	if (current_brightness != LED_OFF)
++		trigger_data->led_cdev->blink_brightness = current_brightness;
++}
++
+ static void set_baseline_state(struct led_netdev_data *trigger_data)
+ {
++	set_blink_brightness(trigger_data);
++
+ 	if ((trigger_data->mode & MODE_LINK) != 0 && trigger_data->link_up)
+-		led_set_brightness(trigger_data->led_cdev, LED_FULL);
++		led_set_brightness(trigger_data->led_cdev, trigger_data->led_cdev->blink_brightness);
+ 	else
+ 		led_set_brightness(trigger_data->led_cdev, LED_OFF);
+ 
+@@ -427,9 +438,12 @@
+ 	struct net_device *nd_tmp;
+ 	const unsigned mode = trigger_data->mode;
+ 
++	set_blink_brightness(trigger_data);
++
+ 	if (!trigger_data->link_up || (mode & (MODE_TX | MODE_RX)) == 0) {
+ 		/* we don't need to do timer work, just reflect link state. */
+-		led_set_brightness(trigger_data->led_cdev, ((mode & MODE_LINK) != 0 && trigger_data->link_up) ? LED_FULL : LED_OFF);
++		led_set_brightness(trigger_data->led_cdev,
++			((mode & MODE_LINK) != 0 && trigger_data->link_up) ? trigger_data->led_cdev->blink_brightness : LED_OFF);
+ 		return;
+ 	}
+ 
+@@ -457,7 +471,7 @@
+ 		/* OFF -> ON always */
+ 		/* ON -> OFF on activity */
+ 		if (trigger_data->led_cdev->brightness == LED_OFF) {
+-			led_set_brightness(trigger_data->led_cdev, LED_FULL);
++			led_set_brightness(trigger_data->led_cdev, trigger_data->led_cdev->blink_brightness);
+ 		} else if (trigger_data->traffic) {
+ 			led_set_brightness(trigger_data->led_cdev, LED_OFF);
+ 		}
+@@ -465,10 +479,10 @@
+ 		/* base state is OFF */
+ 		/* ON -> OFF always */
+ 		/* OFF -> ON on activity */
+-		if (trigger_data->led_cdev->brightness == LED_FULL) {
++		if (trigger_data->led_cdev->brightness != LED_OFF) {
+ 			led_set_brightness(trigger_data->led_cdev, LED_OFF);
+ 		} else if (trigger_data->traffic) {
+-			led_set_brightness(trigger_data->led_cdev, LED_FULL);
++			led_set_brightness(trigger_data->led_cdev, trigger_data->led_cdev->blink_brightness);
+ 		}
+ 	}
+ 
+@@ -499,6 +513,10 @@
+ 
+ 	led_cdev->trigger_data = trigger_data;
+ 
++	set_blink_brightness(trigger_data);
++	if (led_cdev->blink_brightness == LED_OFF)
++		led_cdev->blink_brightness = led_cdev->max_brightness;
++
+ 	rc = device_create_file(led_cdev->dev, &dev_attr_device_name);
+ 	if (rc)
+ 		goto err_out;

@@ -1,0 +1,2 @@
+kernel/../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/bpm/bcm963138/bcm_bpm.ko
+kernel/../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/opensource/char/serial/bcm963138/bcm63xx_cons.ko

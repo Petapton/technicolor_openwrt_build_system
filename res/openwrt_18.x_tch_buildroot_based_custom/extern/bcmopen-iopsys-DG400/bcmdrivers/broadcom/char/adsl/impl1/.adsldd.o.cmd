@@ -1,0 +1,1 @@
+cmd_../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/adsl/bcm963138/adsldd.o := arm-openwrt-linux-gnueabi-ld -EL    -r -o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/adsl/bcm963138/adsldd.o ../../../../extern/bcmopen-iopsys-DG400/bcmdrivers/broadcom/char/adsl/bcm963138/adsldd_dep.o 

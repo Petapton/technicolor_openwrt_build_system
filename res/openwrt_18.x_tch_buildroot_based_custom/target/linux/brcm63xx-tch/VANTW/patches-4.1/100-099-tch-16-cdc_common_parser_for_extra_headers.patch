@@ -1,0 +1,222 @@
+commit c40a2c8817e42273a4627c48c884b805475a733f
+Author: Oliver Neukum <oneukum@suse.com>
+Date:   Mon Sep 7 16:05:38 2015 +0200
+
+    CDC: common parser for extra headers
+    
+    CDC drivers all implement their own parser for the extra headers.
+    This patch fixes the code duplication introducing a single common
+    parser in usbnet.
+    
+    Signed-off-by: Oliver Neukum <oneukum@suse.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index b4cf107..060918f 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -42,6 +42,7 @@
+ #include <linux/mii.h>
+ #include <linux/usb.h>
+ #include <linux/usb/usbnet.h>
++#include <linux/usb/cdc.h>
+ #include <linux/slab.h>
+ #include <linux/kernel.h>
+ #include <linux/pm_runtime.h>
+@@ -1962,6 +1963,143 @@ static int __usbnet_write_cmd(struct usbnet *dev, u8 cmd, u8 reqtype,
+        return err;
+ }
+ 
++int cdc_parse_cdc_header(struct usb_cdc_parsed_header *hdr,
++                               struct usb_interface *intf,
++                               u8 *buffer,
++                               int buflen)
++{
++       /* duplicates are ignored */
++       struct usb_cdc_union_desc *union_header = NULL;
++
++       /* duplicates are not tolerated */
++       struct usb_cdc_header_desc *header = NULL;
++       struct usb_cdc_ether_desc *ether = NULL;
++       struct usb_cdc_mdlm_detail_desc *detail = NULL;
++       struct usb_cdc_mdlm_desc *desc = NULL;
++
++       unsigned int elength;
++       int cnt = 0;
++
++       memset(hdr, 0x00, sizeof(struct usb_cdc_parsed_header));
++       hdr->phonet_magic_present = false;
++       while (buflen > 0) {
++               elength = buffer[0];
++               if (!elength) {
++                       dev_err(&intf->dev, "skipping garbage byte\n");
++                       elength = 1;
++                       goto next_desc;
++               }
++               if (buffer[1] != USB_DT_CS_INTERFACE) {
++                       dev_err(&intf->dev, "skipping garbage\n");
++                       goto next_desc;
++               }
++
++               switch (buffer[2]) {
++               case USB_CDC_UNION_TYPE: /* we've found it */
++                       if (elength < sizeof(struct usb_cdc_union_desc))
++                               goto next_desc;
++                       if (union_header) {
++                               dev_err(&intf->dev, "More than one union descriptor, skipping ...\n");
++                               goto next_desc;
++                       }
++                       union_header = (struct usb_cdc_union_desc *)buffer;
++                       break;
++               case USB_CDC_COUNTRY_TYPE:
++                       if (elength < sizeof(struct usb_cdc_country_functional_desc))
++                               goto next_desc;
++                       hdr->usb_cdc_country_functional_desc =
++                               (struct usb_cdc_country_functional_desc *)buffer;
++                       break;
++               case USB_CDC_HEADER_TYPE:
++                       if (elength != sizeof(struct usb_cdc_header_desc))
++                               goto next_desc;
++                       if (header)
++                               return -EINVAL;
++                       header = (struct usb_cdc_header_desc *)buffer;
++                       break;
++               case USB_CDC_ACM_TYPE:
++                       if (elength < sizeof(struct usb_cdc_acm_descriptor))
++                               goto next_desc;
++                       hdr->usb_cdc_acm_descriptor =
++                               (struct usb_cdc_acm_descriptor *)buffer;
++                       break;
++               case USB_CDC_ETHERNET_TYPE:
++                       if (elength != sizeof(struct usb_cdc_ether_desc))
++                               goto next_desc;
++                       if (ether)
++                               return -EINVAL;
++                       ether = (struct usb_cdc_ether_desc *)buffer;
++                       break;
++               case USB_CDC_CALL_MANAGEMENT_TYPE:
++                       if (elength < sizeof(struct usb_cdc_call_mgmt_descriptor))
++                               goto next_desc;
++                       hdr->usb_cdc_call_mgmt_descriptor =
++                               (struct usb_cdc_call_mgmt_descriptor *)buffer;
++                       break;
++               case USB_CDC_DMM_TYPE:
++                       if (elength < sizeof(struct usb_cdc_dmm_desc))
++                               goto next_desc;
++                       hdr->usb_cdc_dmm_desc =
++                               (struct usb_cdc_dmm_desc *)buffer;
++                       break;
++               case USB_CDC_MDLM_TYPE:
++                       if (elength < sizeof(struct usb_cdc_mdlm_desc *))
++                               goto next_desc;
++                       if (desc)
++                               return -EINVAL;
++                       desc = (struct usb_cdc_mdlm_desc *)buffer;
++                       break;
++               case USB_CDC_MDLM_DETAIL_TYPE:
++                       if (elength < sizeof(struct usb_cdc_mdlm_detail_desc *))
++                               goto next_desc;
++                       if (detail)
++                               return -EINVAL;
++                       detail = (struct usb_cdc_mdlm_detail_desc *)buffer;
++                       break;
++               case USB_CDC_NCM_TYPE:
++                       if (elength < sizeof(struct usb_cdc_ncm_desc))
++                               goto next_desc;
++                       hdr->usb_cdc_ncm_desc = (struct usb_cdc_ncm_desc *)buffer;
++                       break;
++               case USB_CDC_MBIM_TYPE:
++                       if (elength < sizeof(struct usb_cdc_mbim_desc))
++                               goto next_desc;
++
++                       hdr->usb_cdc_mbim_desc = (struct usb_cdc_mbim_desc *)buffer;
++                       break;
++               case USB_CDC_MBIM_EXTENDED_TYPE:
++                       if (elength < sizeof(struct usb_cdc_mbim_extended_desc))
++                               break;
++                       hdr->usb_cdc_mbim_extended_desc =
++                               (struct usb_cdc_mbim_extended_desc *)buffer;
++                       break;
++               case CDC_PHONET_MAGIC_NUMBER:
++                       hdr->phonet_magic_present = true;
++                       break;
++               default:
++                       /*
++                        * there are LOTS more CDC descriptors that
++                        * could legitimately be found here.
++                        */
++                       dev_dbg(&intf->dev, "Ignoring descriptor: type %02x, length %ud\n",
++                                       buffer[2], elength);
++                       goto next_desc;
++               }
++               cnt++;
++next_desc:
++               buflen -= elength;
++               buffer += elength;
++       }
++       hdr->usb_cdc_union_desc = union_header;
++       hdr->usb_cdc_header_desc = header;
++       hdr->usb_cdc_mdlm_detail_desc = detail;
++       hdr->usb_cdc_mdlm_desc = desc;
++       hdr->usb_cdc_ether_desc = ether;
++       return cnt;
++}
++
++EXPORT_SYMBOL(cdc_parse_cdc_header);
++
+ /*
+  * The function can't be called inside suspend/resume callback,
+  * otherwise deadlock will be caused.
+diff --git a/include/linux/usb/cdc.h b/include/linux/usb/cdc.h
+new file mode 100644
+index 0000000..cd8f2e1
+--- /dev/null
++++ b/include/linux/usb/cdc.h
+@@ -0,0 +1,47 @@
++/*
++ * USB CDC common helpers
++ *
++ * Copyright (c) 2015 Oliver Neukum <oneukum@suse.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ */
++
++#include <uapi/linux/usb/cdc.h>
++
++/*
++ * inofficial magic numbers
++ */
++
++#define CDC_PHONET_MAGIC_NUMBER                0xAB
++
++/*
++ * parsing CDC headers
++ */
++
++struct usb_cdc_parsed_header {
++       struct usb_cdc_union_desc *usb_cdc_union_desc;
++       struct usb_cdc_header_desc *usb_cdc_header_desc;
++
++       struct usb_cdc_call_mgmt_descriptor *usb_cdc_call_mgmt_descriptor;
++       struct usb_cdc_acm_descriptor *usb_cdc_acm_descriptor;
++       struct usb_cdc_country_functional_desc *usb_cdc_country_functional_desc;
++       struct usb_cdc_network_terminal_desc *usb_cdc_network_terminal_desc;
++       struct usb_cdc_ether_desc *usb_cdc_ether_desc;
++       struct usb_cdc_dmm_desc *usb_cdc_dmm_desc;
++       struct usb_cdc_mdlm_desc *usb_cdc_mdlm_desc;
++       struct usb_cdc_mdlm_detail_desc *usb_cdc_mdlm_detail_desc;
++       struct usb_cdc_obex_desc *usb_cdc_obex_desc;
++       struct usb_cdc_ncm_desc *usb_cdc_ncm_desc;
++       struct usb_cdc_mbim_desc *usb_cdc_mbim_desc;
++       struct usb_cdc_mbim_extended_desc *usb_cdc_mbim_extended_desc;
++
++       bool phonet_magic_present;
++};
++
++
++int cdc_parse_cdc_header(struct usb_cdc_parsed_header *hdr,
++                               struct usb_interface *intf,
++                               u8 *buffer,
++                               int buflen);

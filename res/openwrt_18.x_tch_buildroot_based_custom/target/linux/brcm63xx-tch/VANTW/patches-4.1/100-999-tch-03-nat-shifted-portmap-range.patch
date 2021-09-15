@@ -1,0 +1,186 @@
+--- a/include/uapi/linux/netfilter/nf_nat.h
++++ b/include/uapi/linux/netfilter/nf_nat.h
+@@ -9,6 +9,7 @@
+ #define NF_NAT_RANGE_PROTO_RANDOM		(1 << 2)
+ #define NF_NAT_RANGE_PERSISTENT			(1 << 3)
+ #define NF_NAT_RANGE_PROTO_RANDOM_FULLY		(1 << 4)
++#define NF_NAT_RANGE_PROTO_OFFSET		(1 << 5)
+ 
+ #define NF_NAT_RANGE_PROTO_RANDOM_ALL		\
+ 	(NF_NAT_RANGE_PROTO_RANDOM | NF_NAT_RANGE_PROTO_RANDOM_FULLY)
+@@ -16,7 +17,7 @@
+ #define NF_NAT_RANGE_MASK					\
+ 	(NF_NAT_RANGE_MAP_IPS | NF_NAT_RANGE_PROTO_SPECIFIED |	\
+ 	 NF_NAT_RANGE_PROTO_RANDOM | NF_NAT_RANGE_PERSISTENT |	\
+-	 NF_NAT_RANGE_PROTO_RANDOM_FULLY)
++	 NF_NAT_RANGE_PROTO_RANDOM_FULLY | NF_NAT_RANGE_PROTO_OFFSET)
+ 
+ struct nf_nat_ipv4_range {
+ 	unsigned int			flags;
+@@ -31,12 +32,21 @@ struct nf_nat_ipv4_multi_range_compat {
+ 	struct nf_nat_ipv4_range	range[1];
+ };
+ 
++struct nf_nat_range_v1 {
++	unsigned int			flags;
++	union nf_inet_addr		min_addr;
++	union nf_inet_addr		max_addr;
++	union nf_conntrack_man_proto	min_proto;
++	union nf_conntrack_man_proto	max_proto;
++};
++
+ struct nf_nat_range {
+ 	unsigned int			flags;
+ 	union nf_inet_addr		min_addr;
+ 	union nf_inet_addr		max_addr;
+ 	union nf_conntrack_man_proto	min_proto;
+ 	union nf_conntrack_man_proto	max_proto;
++	union nf_conntrack_man_proto	base_proto;
+ };
+ 
+ #endif /* _NETFILTER_NF_NAT_H */
+--- a/net/netfilter/nf_nat_core.c
++++ b/net/netfilter/nf_nat_core.c
+@@ -345,9 +345,10 @@ get_unique_tuple(struct nf_conntrack_tup
+ 	/* Only bother mapping if it's not already in range and unique */
+ 	if (!(range->flags & NF_NAT_RANGE_PROTO_RANDOM_ALL)) {
+ 		if (range->flags & NF_NAT_RANGE_PROTO_SPECIFIED) {
+-			if (l4proto->in_range(tuple, maniptype,
+-					      &range->min_proto,
+-					      &range->max_proto) &&
++			if (!(range->flags & NF_NAT_RANGE_PROTO_OFFSET) &&
++			    l4proto->in_range(tuple, maniptype,
++			          &range->min_proto,
++			          &range->max_proto) &&
+ 			    (range->min_proto.all == range->max_proto.all ||
+ 			     !nf_nat_used_tuple(tuple, ct)))
+ 				goto out;
+@@ -356,7 +357,7 @@ get_unique_tuple(struct nf_conntrack_tup
+ 		}
+ 	}
+ 
+-	/* Last change: get protocol to try to obtain unique tuple. */
++	/* Last chance: get protocol to try to obtain unique tuple. */
+ 	l4proto->unique_tuple(l3proto, tuple, range, maniptype, ct);
+ out:
+ 	rcu_read_unlock();
+--- a/net/netfilter/nf_nat_proto_common.c
++++ b/net/netfilter/nf_nat_proto_common.c
+@@ -80,6 +80,8 @@ void nf_nat_l4proto_unique_tuple(const s
+ 						  : tuple->src.u.all);
+ 	} else if (range->flags & NF_NAT_RANGE_PROTO_RANDOM_FULLY) {
+ 		off = prandom_u32();
++	} else if (range->flags & NF_NAT_RANGE_PROTO_OFFSET) {
++		off = (ntohs(*portptr) - ntohs(range->base_proto.all));
+ 	} else {
+ 		off = *rover;
+ 	}
+@@ -88,7 +90,8 @@ void nf_nat_l4proto_unique_tuple(const s
+ 		*portptr = htons(min + off % range_size);
+ 		if (++i != range_size && nf_nat_used_tuple(tuple, ct))
+ 			continue;
+-		if (!(range->flags & NF_NAT_RANGE_PROTO_RANDOM_ALL))
++		if (!(range->flags & (NF_NAT_RANGE_PROTO_RANDOM_ALL|
++					NF_NAT_RANGE_PROTO_OFFSET)))
+ 			*rover = off;
+ 		return;
+ 	}
+--- a/net/netfilter/xt_nat.c
++++ b/net/netfilter/xt_nat.c
+@@ -31,6 +31,7 @@ static void xt_nat_convert_range(struct
+ {
+ 	memset(&dst->min_addr, 0, sizeof(dst->min_addr));
+ 	memset(&dst->max_addr, 0, sizeof(dst->max_addr));
++	memset(&dst->base_proto, 0, sizeof(dst->base_proto));
+ 
+ 	dst->flags	 = src->flags;
+ 	dst->min_addr.ip = src->min_ip;
+@@ -75,6 +76,43 @@ xt_dnat_target_v0(struct sk_buff *skb, c
+ static unsigned int
+ xt_snat_target_v1(struct sk_buff *skb, const struct xt_action_param *par)
+ {
++	const struct nf_nat_range_v1 *range_v1 = par->targinfo;
++	struct nf_nat_range range;
++	enum ip_conntrack_info ctinfo;
++	struct nf_conn *ct;
++
++	ct = nf_ct_get(skb, &ctinfo);
++	NF_CT_ASSERT(ct != NULL &&
++		     (ctinfo == IP_CT_NEW || ctinfo == IP_CT_RELATED ||
++		      ctinfo == IP_CT_RELATED_REPLY));
++
++	memcpy(&range, range_v1, sizeof(*range_v1));
++	memset(&range.base_proto, 0, sizeof(range.base_proto));
++
++	return nf_nat_setup_info(ct, &range, NF_NAT_MANIP_SRC);
++}
++
++static unsigned int
++xt_dnat_target_v1(struct sk_buff *skb, const struct xt_action_param *par)
++{
++	const struct nf_nat_range_v1 *range_v1 = par->targinfo;
++	struct nf_nat_range range;
++	enum ip_conntrack_info ctinfo;
++	struct nf_conn *ct;
++
++	ct = nf_ct_get(skb, &ctinfo);
++	NF_CT_ASSERT(ct != NULL &&
++		     (ctinfo == IP_CT_NEW || ctinfo == IP_CT_RELATED));
++
++	memcpy(&range, range_v1, sizeof(*range_v1));
++	memset(&range.base_proto, 0, sizeof(range.base_proto));
++
++	return nf_nat_setup_info(ct, &range, NF_NAT_MANIP_DST);
++}
++
++static unsigned int
++xt_snat_target_v2(struct sk_buff *skb, const struct xt_action_param *par)
++{
+ 	const struct nf_nat_range *range = par->targinfo;
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct;
+@@ -88,7 +126,7 @@ xt_snat_target_v1(struct sk_buff *skb, c
+ }
+ 
+ static unsigned int
+-xt_dnat_target_v1(struct sk_buff *skb, const struct xt_action_param *par)
++xt_dnat_target_v2(struct sk_buff *skb, const struct xt_action_param *par)
+ {
+ 	const struct nf_nat_range *range = par->targinfo;
+ 	enum ip_conntrack_info ctinfo;
+@@ -130,7 +168,7 @@ static struct xt_target xt_nat_target_re
+ 		.name		= "SNAT",
+ 		.revision	= 1,
+ 		.target		= xt_snat_target_v1,
+-		.targetsize	= sizeof(struct nf_nat_range),
++		.targetsize	= sizeof(struct nf_nat_range_v1),
+ 		.table		= "nat",
+ 		.hooks		= (1 << NF_INET_POST_ROUTING) |
+ 				  (1 << NF_INET_LOCAL_IN),
+@@ -140,6 +178,26 @@ static struct xt_target xt_nat_target_re
+ 		.name		= "DNAT",
+ 		.revision	= 1,
+ 		.target		= xt_dnat_target_v1,
++		.targetsize	= sizeof(struct nf_nat_range_v1),
++		.table		= "nat",
++		.hooks		= (1 << NF_INET_PRE_ROUTING) |
++				  (1 << NF_INET_LOCAL_OUT),
++		.me		= THIS_MODULE,
++	},
++	{
++		.name		= "SNAT",
++		.revision	= 2,
++		.target		= xt_snat_target_v2,
++		.targetsize	= sizeof(struct nf_nat_range),
++		.table		= "nat",
++		.hooks		= (1 << NF_INET_POST_ROUTING) |
++				  (1 << NF_INET_LOCAL_IN),
++		.me		= THIS_MODULE,
++	},
++	{
++		.name		= "DNAT",
++		.revision	= 2,
++		.target		= xt_dnat_target_v2,
+ 		.targetsize	= sizeof(struct nf_nat_range),
+ 		.table		= "nat",
+ 		.hooks		= (1 << NF_INET_PRE_ROUTING) |

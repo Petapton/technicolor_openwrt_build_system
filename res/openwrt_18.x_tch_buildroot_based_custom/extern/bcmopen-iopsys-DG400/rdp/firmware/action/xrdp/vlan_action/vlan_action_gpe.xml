@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<datastruct>
+    <data_segment name="entries">
+        <entry name="RULE_BASED_NATC_KEY_ENTRY" gendef="True">
+            <!-- table_id must be 1 -->
+            <!-- the first 2 bytes are masked -->
+            <field name="valid" size="1" />
+            <field name="reserved0" size="16" />
+            <field name="sub_table_id" size="3"/>
+            <field name="reserved2" size="12" />
+            <field name="reserved3" size="32" />
+            <field name="reserved4" size="32" />
+            <field name="reserved5" size="7" />
+            <field name="extension" size="1" />
+            <field name="port" size="8"/>
+            <field name="rule" size="16"/>
+        </entry>
+        <!-- rule-based context entry in NATC -->
+        <entry name="RULE_BASED_NATC_CONTEXT_ENTRY" gendef="True">
+            <field name="natc_control" size="32" />
+            <field name="hw_reserved0" size="32" />
+            <field name="untagged_offset" size="8" />
+            <field name="single_tag_cl_offset" size="8" />
+            <field name="dual_tag_cl_offset" size="8" />
+            <field name="p_tag_cl_offset" size="8" />
+            <field name="cmd_list" size="8" is_array="true" array_num_entries="52" />
+        </entry>
+        <entry name="VLAN_ACTION_CONTEXT_ENTRY" gendef="True">
+            <field name="cmd" size="16" is_array="true" array_num_entries="32" />
+        </entry>
+    </data_segment>
+
+    <data_segment name="codedefs">
+        <codedef name="VLAN_ACTION_GPE_OPCODE" gendef="True">
+            <code name="drop" value="0" />
+            <code name="dscp" value="1" />
+            <code name="mac_hdr_copy" value="2" />
+            <code name="replace_16" value="3" />
+            <code name="replace_32" value="4" />
+            <code name="replace_bits_16" value="5" />
+            <code name="copy_bits_16" value="6" />
+            <code name="skip_if" value="7" />
+        </codedef>
+        <codedef name="VLAN_ACTION_TPID_VALUE" gendef="True">
+            <code name="unassigned" value="0" />
+        </codedef>
+        <codedef name="VLAN_ACTION_CL_OFFSET" gendef="True">
+            <code name="untagged" value="0" />
+            <code name="1tag" value="1" />
+            <code name="2tags" value="2" />
+            <code name="ptag" value="3" />
+            <code name="transparent" value="0xff" />
+        </codedef>
+    </data_segment>
+
+    <data_segment name="tables">
+        <!-- GPE handlers used by VLAN_ACTION -->
+        <table name="VLAN_ACTION_GPE_HANDLER_PTR_TABLE" gendef="True">
+            <table_properties module="PROCESSING" size="17" align_type="table"/>
+            <entry name="BYTES_2" />
+        </table>
+    </data_segment>
+</datastruct>

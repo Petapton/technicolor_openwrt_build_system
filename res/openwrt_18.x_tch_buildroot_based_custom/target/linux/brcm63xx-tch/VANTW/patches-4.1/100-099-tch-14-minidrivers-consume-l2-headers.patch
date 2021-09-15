@@ -1,0 +1,20 @@
+Assume the minidriver has taken care of all L2 header parsing
+if it sets skb->protocol.  This allows the minidriver to
+support non-ethernet L2 headers, and even operate without
+any L2 header at all.
+
+Signed-off-by: Bjørn Mork <bjorn@xxxxxxx>
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -324,7 +324,10 @@ void usbnet_skb_return (struct usbnet *d
+ 		return;
+ 	}
+ 
+-	skb->protocol = eth_type_trans (skb, dev->net);
++	/* only update if unset to allow minidriver rx_fixup override */
++	if (skb->protocol == 0)
++		skb->protocol = eth_type_trans (skb, dev->net);
++
+ 	dev->net->stats.rx_packets++;
+ 	dev->net->stats.rx_bytes += skb->len;
+ 
