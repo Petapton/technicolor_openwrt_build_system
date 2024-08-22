@@ -31,13 +31,11 @@ Alternatively you can also set up an http server so that you are ready to serve 
 
 Again, clone and cd. Then 
 
-    docker-compose up
+    docker compose up
 
 Again, it will take some time. After that you will be able to get a shell into the buildenv container by running
 
-    docker exec -it technicolor_openwrt_build_system_buildenv_1 bash
-
-NOTE: if it doesn't work, just do `docker ps` to list your running containers and replace _technicolor_openwrt_build_system_buildenv1_ with your istance name.
+    docker compose exec -it buildenv bash
 
 Also add these lines to your /etc/opkg.conf
 
